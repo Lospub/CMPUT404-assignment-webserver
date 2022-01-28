@@ -41,19 +41,19 @@ class MyWebServer(socketserver.BaseRequestHandler):
         
         path = root + path_
 
+        if path_[-1] == "/":
+            path = path + "index.html"
+
         if method == "GET":
-            if os.path.isdir(path):
-                if path_[-1] != "/":
+            if os.path.isdir(path) and path_[-1] != "/":
                     # redirect
-                    response_ = "HTTP/1.1 301 Moved Permanently\r\nLocation:"+path_+"/"+"\r\nConnection: Close\r\n \r\n"
-                else:
-                    path = path + "index.html"
-                
-                ext = self.get_ext(path)
-                if ext != None:
+                    response_ = "HTTP/1.1 301 Moved Permanently\r\nLocation:"+path_+"/"+"\r\n\r\n"
+            elif os.path.isfile(path):
+                ext_type = self.get_ext(path)
+                if ext_type != None:
                     content = self.get_content(path)
                     if content != "ERROR":
-                        response_ = "HTTP/1.1 200 OK\r\nContent-Type: " + ext + "\r\n\r\n" + content + "\r\n"
+                        response_ = "HTTP/1.1 200 OK\r\nContent-Type: " + ext_type + "\r\n\r\n" + content + "\r\n"
                     else:
                         response_ = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
                 else:
