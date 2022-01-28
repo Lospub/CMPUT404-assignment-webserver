@@ -1,7 +1,9 @@
 #  coding: utf-8 
+import mimetypes
 import socketserver
+import os
 
-# Copyright 2013 Abram Hindle, Eddie Antonio Santos
+# Copyright 2013 Abram Hindle, Eddie Antonio Santos, Junyao Cui
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +34,66 @@ class MyWebServer(socketserver.BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
-        self.request.sendall(bytearray("OK",'utf-8'))
+
+        root = "./www"
+        response_ = None
+        method, path_, http_ = self.parse_request(self.data)
+        
+        path = root + path_
+
+        if method == "GET":
+            if os.path.isdir(path):
+                if path_[-1] != "/":
+                    # redirect
+                    response_ = "HTTP/1.1 301 Moved Permanently\r\nLocation:"+path_+"/"+"\r\nConnection: Close\r\n \r\n"
+                else:
+                    path = path + "index.html"
+                
+                ext = self.get_ext(path)
+                if ext != None:
+                    content = self.get_content(path)
+                    if content != "ERROR":
+                        response_ = "HTTP/1.1 200 OK\r\nContent-Type: " + ext + "\r\n\r\n" + content + "\r\n"
+                    else:
+                        response_ = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
+                else:
+                    response_ = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
+            else:
+                response_ = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n"
+        else:
+            response_ = "HTTP/1.1 405 Method Not Allowed\r\nConnection: close\r\n"
+
+        self.request.sendall(bytearray(response_,'utf-8'))
+
+    # https://stackoverflow.com/questions/18563664/socketserver-python
+    def parse_request(self, data):
+        # https://stackoverflow.com/questions/606191/convert-bytes-to-a-string
+        lines = data.decode("utf-8").splitlines()
+        
+        method, path, http_ = lines[0].split()
+        return method, path, http_
+    
+    def get_ext(self, path_):
+        root, ext = os.path.splitext(path_)
+        if ext == ".html":
+            return "text/html"
+        elif ext == ".css":
+            return "text/css"
+        else:
+            return None
+
+    def get_content(self, path_):
+        try:
+            file = open(path_, "r")
+        except Exception:
+            return "ERROR"
+        
+        content = file.read()
+        file.close()
+        return content
+    
+
+        
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
