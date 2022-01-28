@@ -3,7 +3,7 @@ import mimetypes
 import socketserver
 import os
 
-# Copyright 2013 Abram Hindle, Eddie Antonio Santos, Junyao Cui
+# Copyright 2022 Abram Hindle, Eddie Antonio Santos, Junyao Cui
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,10 +44,14 @@ class MyWebServer(socketserver.BaseRequestHandler):
         if path_[-1] == "/":
             path = path + "index.html"
 
+        # Chech Header
         if method == "GET":
+
             if os.path.isdir(path) and path_[-1] != "/":
-                    # redirect
-                    response_ = "HTTP/1.1 301 Moved Permanently\r\nLocation:"+path_+"/"+"\r\n\r\n"
+                # redirect
+                response_ = "HTTP/1.1 301 Moved Permanently\r\nLocation:"+path_+"/"+"\r\n\r\n"
+
+            # check file 
             elif os.path.isfile(path):
                 ext_type = self.get_ext(path)
                 if ext_type != None:
@@ -73,6 +77,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         method, path, http_ = lines[0].split()
         return method, path, http_
     
+    # get mime type
     def get_ext(self, path_):
         root, ext = os.path.splitext(path_)
         if ext == ".html":
@@ -82,6 +87,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         else:
             return None
 
+    # get file content
     def get_content(self, path_):
         try:
             file = open(path_, "r")
